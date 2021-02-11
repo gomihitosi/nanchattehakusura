@@ -339,6 +339,10 @@ class GameObject {
   }
   pushLog(text) {
     LOG.push(text);
+    // 100行まで保持
+    if(LOG.length >= 100) {
+      LOG.splice(0, LOG.length - 100);
+    }
     this.logArea.text = LOG.join("\n");
     this.logArea.scrollY = this.logArea.getLines().length * this.logArea.lineSize - this.logArea.height;
   }
