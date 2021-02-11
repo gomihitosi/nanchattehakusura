@@ -79,13 +79,13 @@ class GameObject {
       if(this.logArea.scrollY > a) this.logArea.scrollY = a;
     });
 
-    //
     this.tweet.shape = RectangleShape({
         width: 80, height: 60, cornerRadius: 5, fill: COLOR.white, strokeWidth: 0,
       }).addChildTo(this.group)
       .setPosition(380, 55)
-      .setInteractive(true)
-      .on("pointstart", () => {
+      .setInteractive(true);
+    // TODO: iPhone対応の為onclickに直接付ける
+    this.tweet.shape.onclick = function () {
         const text = `なんちゃってはくすらを${status.isClear ? Math.floor((status.clearDate - status.startDate) / 1000) + '秒でクリアしたよ' : '遊んでるよ'}！`
           + ` [LEVEL:${status.level} K/D:${status.kill}/${status.death}`
           + ` HP-ATK-DEF-EXP:${status.hp}-${status.atk}-${status.def}-${status.exp}`
@@ -96,7 +96,7 @@ class GameObject {
           url: location.href,
         });
         window.open(url, 'share window', 'width=480, height=320');
-      });
+    };
     this.tweet.sprite = Sprite("tweet").addChildTo(this.group)
       .setPosition(380, 55)
     
