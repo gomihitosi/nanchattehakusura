@@ -1,4 +1,4 @@
-
+const VERSION = 0.01;
 const ENEMY_DATA = [
 { image:"maou", name:"魔王クソゲム", hp:100, exp:300, atk:30, def:30 },
 { image:"sura", name:"スラね", hp:3, exp:1, atk:1, def:0 },

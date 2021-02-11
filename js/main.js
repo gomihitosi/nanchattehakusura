@@ -88,7 +88,8 @@ class GameObject {
       .on("pointstart", () => {
         const text = `なんちゃってはくすらを${status.isClear ? Math.floor((status.clearDate - status.startDate) / 1000) + '秒でクリアしたよ' : '遊んでるよ'}！`
           + ` [LEVEL:${status.level} K/D:${status.kill}/${status.death}`
-          + ` HP-ATK-DEF-EXP:${status.hp}-${status.atk}-${status.def}-${status.exp}]`;
+          + ` HP-ATK-DEF-EXP:${status.hp}-${status.atk}-${status.def}-${status.exp}`
+          + ` VERSION:${VERSION}]`;
         const url = Twitter.createURL({
           text: text,
           hashtags: 'なんちゃってはくすら',
