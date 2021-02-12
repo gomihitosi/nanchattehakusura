@@ -1,4 +1,10 @@
 const se = {};
+const sePlay = (key, isStop=true) => {
+  if(!se || !(key in se)) return;
+  if(isStop) se[key].stop();
+  se[key].play();
+}
+const image = {};
 const status = {
   startDate: null, clearDate: null, 
   isBattle: false, isClear: false, floor: 0, speed: 0, kill: 0, death: 0, turn: 0,
@@ -20,7 +26,12 @@ phina.define('MainScene', {
     ["busi", "piyo", "piro"].forEach(key=>{
       se[key] = AssetManager.get("sound", key);
       se[key].volume = 0.5;
-    })
+    });
+
+    ["anya", "sura", "buta", "iwao", "maou"].forEach(key=>{
+      image[key] = AssetManager.get("image", key);
+    });
+    
     // iPhone音声対応
     document.querySelector('canvas').addEventListener('touchstart', function touch(e) {
       for(let key in se){
@@ -85,7 +96,7 @@ class GameObject {
       .setPosition(380, 55)
       .setInteractive(true);
     // TODO: iPhone対応の為onclickに直接付ける
-    this.tweet.shape.onclick = function () {
+    this.tweet.shape.on('click', (e) => {
         const text = `なんちゃってはくすらを${status.isClear ? Math.floor((status.clearDate - status.startDate) / 1000) + '秒でクリアしたよ' : '遊んでるよ'}！`
           + ` [LEVEL:${status.level} K/D:${status.kill}/${status.death}`
           + ` HP-ATK-DEF-EXP:${status.hp}-${status.atk}-${status.def}-${status.exp}`
@@ -96,7 +107,7 @@ class GameObject {
           url: location.href,
         });
         window.open(url, 'share window', 'width=480, height=320');
-    };
+    });
     this.tweet.sprite = Sprite("tweet").addChildTo(this.group)
       .setPosition(380, 55)
     
@@ -109,7 +120,7 @@ class GameObject {
         const filterdData = SPEED_DATA.filter(v=>v.needLevel <= status.level);
         if(filterdData.length === 1) return;
 
-        se.piyo.play();
+        sePlay('piyo');
         status.speed++;
         if(status.speed >= filterdData.length) status.speed = 0;
         this.speed.label.text = filterdData[status.speed].text;
@@ -176,14 +187,17 @@ class GameObject {
       .to({ scaleY: 1 }, 200, 'easeOutQuad').play()
   }
   encount() {
-    se.piro.play();
+    sePlay('piro');
     status.floor++;
     this.popUpLabel(1, OBJECT_DATA.label.floor.x, OBJECT_DATA.label.floor.y);
     this.updateStatusLabel();
 
     const rawEnemyData = status.floor >= ENEMY_DATA.length ? ENEMY_DATA[0] : ENEMY_DATA[status.floor];
-    const enemyStatus = JSON.parse(JSON.stringify(rawEnemyData));
-    this.battle.sprite.enemy.setImage(enemyStatus.image);
+    const enemyStatus = {...rawEnemyData};
+    if(enemyStatus.image !== this.battle.sprite.enemy.imageName) {
+      this.battle.sprite.enemy.setImage(image[enemyStatus.image]);
+      this.battle.sprite.enemy.imageName = enemyStatus.image;
+    }
     
     if(status.floor === 30) {
       this.pushLog(`<color:${COLOR.red}>[${enemyStatus.name}]</color>「よくぞココまで来たなニンゲンよ。私が直々に相手をしてやろう」`);
@@ -224,8 +238,8 @@ class GameObject {
         }
       }
     }
-    const reBattle = () => {
-      se.busi.play();
+    const attack = () => {
+      sePlay('busi');
 
       const calcPlayerDamage = status.def - enemyStatus.atk;
       const calcEnemyDamage = enemyStatus.def - status.atk;
@@ -287,7 +301,7 @@ class GameObject {
       }
       this.battle.sprite.player.tweener.to({x: centerX - 64}, speedDiv, 'easeOutQuint').to({x: centerX}, speedDiv).play();
       this.battle.sprite.enemy.tweener.to({x: centerX + 64}, speedDiv, 'easeOutQuint').to({x: centerX}, speedDiv).call(()=>{
-        reBattle();
+        attack();
       }).play();
     }
     const centerX = SCREEN_SIZE_X / 2;
@@ -295,7 +309,9 @@ class GameObject {
     const speedDiv = SPEED_DATA[status.speed].speed / 5;
 
     this.battle.sprite.player.tweener.to({x: centerX}, speed).play();
-    this.battle.sprite.enemy.tweener.to({x: centerX}, speed).call(reBattle).play();
+    this.battle.sprite.enemy.tweener.to({x: centerX}, speed).call(()=>{
+      attack();
+    }).play();
   }
   getLabel (key) {
     const data = OBJECT_DATA.label[key];
@@ -317,7 +333,7 @@ class GameObject {
       return;
     }
     status.level++;
-    se.piyo.play();
+    sePlay('piyo');
 
     const filterdData = SPEED_DATA.filter(v=>v.needLevel===status.level);
     if(filterdData.length > 0) {
@@ -369,11 +385,17 @@ class GameObject {
     const color = Number.isInteger(value) && value < 0 ? COLOR.red: COLOR.white;
     const text = Number.isInteger(value) && value > 0 ? `+${value}`: value;
 
-    Label({
+    const pop = Label({
       text: text, fontSize: size,　fill: color,
       stroke: COLOR.black, strokeWidth: 5, fontWeight: 900,
-    }).addChildTo(this.group)
+    });
+    // TODO: オブジェクトが残り続けるのでタグ付けして消去
+    pop.tag = "popup";
+    this.group.children.eraseIfAll(v=>{
+      return v.tag === 'popup' && !v.tweener.playing
+    });
+    pop.addChildTo(this.group)
       .setPosition(x, y)
-      .tweener.by({y: -20}, 150, "easeOutQuad").wait(300).fadeOut(100).play();
+      .tweener.setLoop(false).by({y: -20}, 150, "easeOutQuad").wait(300).fadeOut(100).play();
   }
 }
