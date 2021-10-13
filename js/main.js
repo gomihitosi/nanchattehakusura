@@ -197,15 +197,25 @@ class GameObject {
     this.messageOpen('魔王クソゲム「世界を…滅ぼす！」\nあなた「やだ～～」\n\n30Fに潜む魔王クソゲムを討つべく\n己を鍛えながらダンジョンに挑みましょう。\n\n[クリック か タッチ で閉じる]');
   }
   openSave() {
-    const enc= new TextEncoder();
-    const hexEncData = enc.encode(JSON.stringify(GameData)).map(v=>v.toString(16));
-    getTextArea().value = hexEncData;
+    const enc = new TextEncoder();
+    const encGameData = enc.encode(JSON.stringify(GameData));
+    const base64Data = btoa(String.fromCharCode(...new Uint8Array(encGameData)));
+
+    getTextArea().value = `VERSION:${VERSION}:${base64Data}`;
     const p = getPopup();
     p.style.display = '';
   }
   openLoad() {
-    const p = getPopup();
-    p.style.display = '';
+    const binary = atob(getTextArea().value);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++)        {
+      bytes[i] = binary.charCodeAt(i);
+    }
+
+    const dec = new TextDecoder();
+    const decGameData = dec.decode(bytes);
+    // TODO: 復元処理
   }
   messageOpen(text) {
     Object.keys(this.status.shape).forEach(key=>this.status.shape[key].setInteractive(false));
