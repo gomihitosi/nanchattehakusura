@@ -18,6 +18,32 @@
       justify-content: center;
       align-items: center;
     }
+    #data-popup {
+      position: absolute;
+      z-index: 9999;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+    #data-area {
+      z-index: 9999;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    #data-text-area {
+      z-index: 9999;
+      width: 80%;
+      height: 40%;
+    }
+    button {
+      font-size:3rem;
+      padding: 0.2rem 0.4rem;
+      margin: 0.4rem 0.8rem;
+    }
   </style>
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@gomihitomi">
@@ -28,6 +54,25 @@
 </head>
 
 <body>
+  <div id="data-popup" style="display: none;">
+    <div id="data-area">
+      <textarea id="data-text-area"></textarea>
+      <div id="button-area">
+        <button id="clear">クリア</button>
+        <button id="close">閉じる</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const getPopup = () => document.getElementById('data-popup');
+    const getTextArea = () => document.getElementById('data-text-area');
+
+    const clear = document.getElementById('clear');
+    clear.addEventListener('click', (e)=>{ getTextArea().value = '' });
+
+    const close = document.getElementById('close');
+    close.addEventListener('click', (e)=>{ getPopup().style.display = 'none' });
+  </script>
   <script>
     window.addEventListener('touchmove.noScroll', function (e) {
       e.preventDefault();

@@ -30,6 +30,7 @@ const ASSETS = {
     'busi': 'assets/sound/busi.' + SUPPORT_EXT,
     'piro': 'assets/sound/piro.' + SUPPORT_EXT,
     'piyo': 'assets/sound/piyo.' + SUPPORT_EXT,
+    'crit': 'assets/sound/crit.' + SUPPORT_EXT,
   },
   font: {},
 };

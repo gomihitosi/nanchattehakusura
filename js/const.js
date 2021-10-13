@@ -1,4 +1,4 @@
-const VERSION = 0.03;
+const VERSION = 0.10;
 const ENEMY_DATA = [
 { image:"maou", name:"魔王クソゲム", hp:100, exp:300, atk:30, def:30 },
 { image:"sura", name:"スラね", hp:3, exp:1, atk:1, def:0 },
@@ -38,7 +38,10 @@ const SPEED_DATA = [
   {text: 'x2', speed: 500, needLevel: 20},
   {text: 'x4', speed: 250, needLevel: 30},
   {text: 'x8', speed: 125, needLevel: 40},
-  {text: 'x16', speed: 60, needLevel: 50}
+  {text: 'x16', speed: 60, needLevel: 50},
+  {text: 'x32', speed: 30, needLevel: 65},
+  {text: 'x64', speed: 15, needLevel: 80},
+  {text: 'x100', speed: 10, needLevel: 100}
 ];
 
 const COLOR = {
@@ -81,12 +84,14 @@ const LOG = [
   `<color:${COLOR.red}>[画面右上]</color>[x1]で戦闘速度を変更出来る。レベルによって制限がある。`,
   `<color:${COLOR.red}>[画面下部]</color>[出撃]で魔王を倒す旅に出発する。`,
   `<color:${COLOR.red}>[画面下部]</color>[◯EXPで強化]でステータスを強化出来る。`,
+  `<color:${COLOR.red}>[画面下部]</color>[セーブ]でセーブ用文字列の出力/復元が出来る。`,
+  `<color:${COLOR.red}>まだロード作って無いからセーブ用文字列だけコピーしといて</color>`,
   `<color:${COLOR.red}>[画面下部]</color>あなたのステータスが確認出来る。`,
   SEPARATION,
   `<color:${COLOR.blue}>[Tips]</color>戦闘は自動で進む。とりあえず[出撃]を押してみよう。`,
   `<color:${COLOR.blue}>[Tips]</color>HPが0以下になっても、1Fに戻される以外デメリットはない。`,
   `<color:${COLOR.blue}>[Tips]</color>敵と同時にHPが0以下になると、経験値を得ることは出来ない。`,
-  `<color:${COLOR.blue}>[Tips]</color>リロードしたらデータが消えるので気をつけてください。`,
+  `<color:${COLOR.blue}>[Tips]</color>クリティカルが発生すると、防御力無視のダメージを与える。`,
   SEPARATION,
 ];
 
@@ -119,6 +124,21 @@ const ENCOUNT_TEXT = [
   'この動き、捉えるられるかな！？',
   '今日も壊しますかネ…',
   'オレサマ オマエ ブッコロス',
+  '何もかもなくなっちゃえっ！',
+  '見える…見えるぞ！勝利が！',
+  '戦いの中でしか、得られない物がある',
+  '教育の時間ってワケ？',
+  'フ～…"殺"るか…',
+  '10秒だ。',
+  'これがフルパワーだッ',
+  '術式開放…出るぞ！',
+  '認識すらも出来ずに、消えな',
+  '無事に帰れるとは思わないことだ',
+  'す、すみません…お命いただきますっ！',
+  'ふぁ～…めんどくさいな…',
+  '…世紀の瞬間を見逃すなよ',
+  '対よろ',
+  '初見さんいらっしゃいませ～コメントよろしく～',
 ];
 const WIN_TEXT = [
   '俺、なんかやっちゃいました？',
@@ -141,6 +161,18 @@ const WIN_TEXT = [
   'お前も俺を受け止めきれないのか…',
   'ダンスタイムはもうお終いだよ',
   '薔薇を抱いて眠れ…',
+  '対あり',
+  '今日はビールだ！',
+  '美容院の予約しよ～っと',
+  'ちっちっちっ',
+  'またつまらぬ物を切ってしまった…',
+  '証明完了…',
+  '導いてしまったネ',
+  '今日やった所、来週のテストにでま～す',
+  '残像だ',
+  '配信お疲れさまでした～',
+  'これが世界の答えだ！',
+  'それで本気か？',
 ];
 const LOSE_TEXT = [
   'うそ～ん',
@@ -173,6 +205,21 @@ const LOSE_TEXT = [
   '夢みたいだけど夢じゃない！',
   'これはそうつまり、負けたということだね？',
   'は～終わった終わった',
+  'そこは弱いのよ',
+  '修行のやりなおしだ…',
+  'あっ、カード使えないんですね…',
+  'コントローラーが壊れてたんだしっ！',
+  '負けてねーしっ！',
+  '目、目にゴミがッ',
+  'また怒られるな～',
+  '本日2度目',
+  '涙の数だけ強くなれるよ',
+  '百転び百起き',
+  '1からやりなおしますっ',
+  'ギャバババーッ',
+  'オロロ…',
+  'バーチャルじゃないっ！？',
+  'これも世界の答えか…',
 ];
 
 const getRandomArrIndex = (arr) => {
@@ -187,3 +234,6 @@ const getWinText = () => {
 const getLoseText = () => {
   return getRandomArrIndex(LOSE_TEXT);
 }
+
+const GOD_LIMIT_TURN = 30;
+const CRITICAL_MAX_PER = 25;

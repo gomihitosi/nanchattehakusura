@@ -5,7 +5,7 @@ const sePlay = (key, isStop=true) => {
   se[key].play();
 }
 const image = {};
-const status = {
+const GameData = {
   startDate: null, clearDate: null, 
   isBattle: false, isClear: false, floor: 0, speed: 0, kill: 0, death: 0, turn: 0,
   level: 1, maxHp:10, hp:10, atk:1, def:1, exp:0,
@@ -17,13 +17,13 @@ phina.define('MainScene', {
   init: function (option) {
     this.superInit(option);
 
-    status.startDate = new Date();
+    GameData.startDate = new Date();
 
     this.backgroundColor = 'COLOR.black';
     this.mainGroup = DisplayElement().addChildTo(this)
       .setPosition(0, 0);
 
-    ["busi", "piyo", "piro"].forEach(key=>{
+    ["busi", "piyo", "piro", "crit"].forEach(key=>{
       se[key] = AssetManager.get("sound", key);
       se[key].volume = 0.5;
     });
@@ -59,6 +59,8 @@ class GameObject {
     this.battle = { sprite:{} };
     this.speed = { shape: {}, label:{} };
     this.tweet = { sprite: {}, label:{} };
+    this.save = { sprite: {}, label:{} };
+    this.load = { sprite: {}, label:{} };
 
     this.message = { shape: {}, label:{} };
   }
@@ -97,9 +99,9 @@ class GameObject {
       .setInteractive(true);
     // TODO: iPhone対応の為onclickに直接付ける
     this.tweet.shape.on('click', (e) => {
-        const text = `なんちゃってはくすらを${status.isClear ? Math.floor((status.clearDate - status.startDate) / 1000) + '秒でクリアしたよ' : '遊んでるよ'}！`
-          + ` [LEVEL:${status.level} K/D:${status.kill}/${status.death}`
-          + ` HP-ATK-DEF-EXP:${status.hp}-${status.atk}-${status.def}-${status.exp}`
+        const text = `なんちゃってはくすらを${GameData.isClear ? Math.floor((GameData.clearDate - GameData.startDate) / 1000) + '秒でクリアしたよ' : '遊んでるよ'}！`
+          + ` [LEVEL:${GameData.level} K/D:${GameData.kill}/${GameData.death}`
+          + ` HP-ATK-DEF-EXP:${GameData.hp}-${GameData.atk}-${GameData.def}-${GameData.exp}`
           + ` VERSION:${VERSION}]`;
         const url = Twitter.createURL({
           text: text,
@@ -117,14 +119,14 @@ class GameObject {
       .setPosition(480, 55)
       .setInteractive(true)
       .on("pointstart", () => {
-        const filterdData = SPEED_DATA.filter(v=>v.needLevel <= status.level);
+        const filterdData = SPEED_DATA.filter(v=>v.needLevel <= GameData.level);
         if(filterdData.length === 1) return;
 
         sePlay('piyo');
-        status.speed++;
-        if(status.speed >= filterdData.length) status.speed = 0;
-        this.speed.label.text = filterdData[status.speed].text;
-        this.pushLog(`<color:${COLOR.green}>[System]</color>戦闘速度を[${filterdData[status.speed].text}]に変更しました。`);
+        GameData.speed++;
+        if(GameData.speed >= filterdData.length) GameData.speed = 0;
+        this.speed.label.text = filterdData[GameData.speed].text;
+        this.pushLog(`<color:${COLOR.green}>[System]</color>戦闘速度を[${filterdData[GameData.speed].text}]に変更しました。`);
       });
     this.speed.label = Label({text: `x1`, fill: COLOR.black, fontSize: 30, fontWeight:600})
       .addChildTo(this.group)
@@ -135,7 +137,7 @@ class GameObject {
       }).addChildTo(this.group)
       .setPosition(270, 775)
       .on("pointstart", () => {
-        status.isBattle = true;
+        GameData.isBattle = true;
         this.updateStatusLabel();
         this.encount();
       });
@@ -149,6 +151,24 @@ class GameObject {
     this.battle.sprite.enemy = PixelSprite("sura").addChildTo(this.group)
       .setPosition(OBJECT_DATA.sprite.enemy.x, OBJECT_DATA.sprite.enemy.y)
       .setScale(4);
+
+    this.save.shape = RectangleShape({
+        width: 60, height: 48, cornerRadius: 5, fill: COLOR.white, strokeWidth: 0,
+      }).addChildTo(this.group)
+      .setPosition(420, OBJECT_Y.need);
+    this.save.label =  Label({ text: 'SAVE', fill: COLOR.black, fontSize: 15 })
+      .addChildTo(this.group)
+      .setPosition(420, OBJECT_Y.need)
+      .on("pointstart", () => { this.openSave() });
+
+    this.load.shape = RectangleShape({
+        width: 60, height: 48, cornerRadius: 5, fill: COLOR.white, strokeWidth: 0,
+      }).addChildTo(this.group)
+      .setPosition(490, OBJECT_Y.need);
+    this.load.label = Label({ text: 'LOAD', fill: COLOR.black, fontSize: 15 })
+      .addChildTo(this.group)
+      .setPosition(490, OBJECT_Y.need)
+      .on("pointstart", () => { this.openSave() });
 
     this.updateStatusLabel();
 
@@ -176,6 +196,17 @@ class GameObject {
 
     this.messageOpen('魔王クソゲム「世界を…滅ぼす！」\nあなた「やだ～～」\n\n30Fに潜む魔王クソゲムを討つべく\n己を鍛えながらダンジョンに挑みましょう。\n\n[クリック か タッチ で閉じる]');
   }
+  openSave() {
+    const enc= new TextEncoder();
+    const hexEncData = enc.encode(JSON.stringify(GameData)).map(v=>v.toString(16));
+    getTextArea().value = hexEncData;
+    const p = getPopup();
+    p.style.display = '';
+  }
+  openLoad() {
+    const p = getPopup();
+    p.style.display = '';
+  }
   messageOpen(text) {
     Object.keys(this.status.shape).forEach(key=>this.status.shape[key].setInteractive(false));
     this.speed.shape.setInteractive(false)
@@ -188,18 +219,18 @@ class GameObject {
   }
   encount() {
     sePlay('piro');
-    status.floor++;
+    GameData.floor++;
     this.popUpLabel(1, OBJECT_DATA.label.floor.x, OBJECT_DATA.label.floor.y);
     this.updateStatusLabel();
 
-    const rawEnemyData = status.floor >= ENEMY_DATA.length ? ENEMY_DATA[0] : ENEMY_DATA[status.floor];
+    const rawEnemyData = GameData.floor >= ENEMY_DATA.length ? ENEMY_DATA[0] : ENEMY_DATA[GameData.floor];
     const enemyStatus = {...rawEnemyData};
     if(enemyStatus.image !== this.battle.sprite.enemy.imageName) {
       this.battle.sprite.enemy.setImage(image[enemyStatus.image]);
       this.battle.sprite.enemy.imageName = enemyStatus.image;
     }
     
-    if(status.floor === 30) {
+    if(GameData.floor === 30) {
       this.pushLog(`<color:${COLOR.red}>[${enemyStatus.name}]</color>「よくぞココまで来たなニンゲンよ。私が直々に相手をしてやろう」`);
     } else {
       this.pushLog(`<color:${COLOR.red}>[${enemyStatus.name}]</color>「${getEncountText()}」`);
@@ -211,62 +242,68 @@ class GameObject {
 
       if(!continueBattle) {
         this.pushLog(`<color:${COLOR.blue}>[あなた]</color>は`
-          + `<color:${COLOR.green}>${status.floor}F</color>で`
+          + `<color:${COLOR.green}>${GameData.floor}F</color>で`
           + `<color:${COLOR.red}>[${enemyStatus.name}]</color>に負けました…。`);
         this.pushLog(SEPARATION);
-        status.hp = status.maxHp;
-        status.isBattle = false;
-        status.floor = 0;
+        GameData.hp = GameData.maxHp;
+        GameData.isBattle = false;
+        GameData.floor = 0;
         this.updateStatusLabel();
       } else {
         this.pushLog(`<color:${COLOR.blue}>[あなた]</color>は`
-          + `<color:${COLOR.green}>${status.floor}F</color>で`
+          + `<color:${COLOR.green}>${GameData.floor}F</color>で`
           + `<color:${COLOR.red}>[${enemyStatus.name}]</color>に勝ちました！`);
         this.pushLog(SEPARATION);
-        if(status.floor < 30) {
+        if(GameData.floor < 30) {
           this.encount();
         } else {
-          status.hp = status.maxHp;
-          status.isBattle = false;
-          status.floor = 0;
+          GameData.hp = GameData.maxHp;
+          GameData.isBattle = false;
+          GameData.floor = 0;
           this.updateStatusLabel();
-          if(!status.isClear) {
-            status.isClear = true;
-            status.clearDate = new Date();
+          if(!GameData.isClear) {
+            GameData.isClear = true;
+            GameData.clearDate = new Date();
             this.messageOpen('魔王クソゲム「調子乗ってすいませんした…」\nあなた「いいよ～～」\n\nあなたは無事魔王クソゲムを討ち倒し\n世界に平和をもたらすことが出来ました！\n\nついでに魔物達も悪そうじゃなかったので、\nそのまま仲良く暮らすことにしましたとさ\n\nめでたしめでたし。\n\n[クリック か タッチ で閉じる]');
           }
         }
       }
     }
     const attack = () => {
-      sePlay('busi');
+      // クリティカル判定
+      const criticalRand = 50 * GameData.level / 200;
+      const isCritical = (criticalRand > CRITICAL_MAX_PER ? CRITICAL_MAX_PER : criticalRand) >= Random.randfloat(0,100);
 
-      const calcPlayerDamage = status.def - enemyStatus.atk;
-      const calcEnemyDamage = enemyStatus.def - status.atk;
+      sePlay(isCritical ? 'crit' : 'busi');
+
+      const calcPlayerDamage = GameData.def - enemyStatus.atk;
+      const calcEnemyDamage = (isCritical ? 0 : enemyStatus.def) - Math.floor(isCritical ? GameData.atk * 1.5 : GameData.atk);
 
       // 無限ループ回避
-      if(calcPlayerDamage >= 0 && calcEnemyDamage >= 0) status.turn++;
-
-      if(status.turn > 10) {
+      if(calcPlayerDamage >= 0 && calcEnemyDamage >= 0) GameData.turn++;
+      if(GameData.turn > GOD_LIMIT_TURN) {
         this.pushLog(`<color:${COLOR.green}>[神]</color>「いいかげんにして」`);
       }
 
-      const playerDamage = status.turn > 10 ? -9999 : calcPlayerDamage > 0 ? 0 : calcPlayerDamage;
+      const playerDamage = GameData.turn > GOD_LIMIT_TURN ? -9999 : calcPlayerDamage > 0 ? 0 : calcPlayerDamage;
       const enemyDamage = calcEnemyDamage > 0 ? 0 : calcEnemyDamage;
 
+      if(isCritical){
+        this.pushLog(` <color:${COLOR.green}>!!!! クリティカル !!!!</color>`);
+      }
       this.pushLog(`<color:${COLOR.blue}>[あなた]</color>に${Math.abs(playerDamage)}のダメージ！`
         + ` <color:${COLOR.red}>[${enemyStatus.name}]</color>に${Math.abs(enemyDamage)}のダメージ！`);
       
       this.popUpLabel(playerDamage, OBJECT_DATA.label.hp.x, OBJECT_DATA.label.hp.y,);
       this.popUpLabel(enemyDamage, centerX, OBJECT_DATA.sprite.enemy.y - 64, 90);
-      status.hp += playerDamage;
+      GameData.hp += playerDamage;
       enemyStatus.hp += enemyDamage;
       this.updateStatusLabel();
 
-      if(status.hp <= 0) {
-        status.turn = 0;
+      if(GameData.hp <= 0) {
+        GameData.turn = 0;
 
-        status.death++;
+        GameData.death++;
         this.popUpLabel(1, OBJECT_DATA.label.death.x, OBJECT_DATA.label.death.y);
         this.updateStatusLabel();
 
@@ -274,17 +311,17 @@ class GameObject {
         this.battle.sprite.enemy.tweener.to({x: -256}, speed).call(()=>{
           battleEnd(false);
         }).play();
-        if(status.floor === 30) {
+        if(GameData.floor === 30) {
           this.pushLog(`<color:${COLOR.red}>[${enemyStatus.name}]</color>「フン、所詮はニンゲンか…」`);
         } else {
           this.pushLog(`<color:${COLOR.red}>[${enemyStatus.name}]</color>「${getWinText()}」`);
         }
         return;
       } else if(enemyStatus.hp <= 0) {
-        status.kill++;
+        GameData.kill++;
         this.popUpLabel(1, OBJECT_DATA.label.kill.x, OBJECT_DATA.label.kill.y);
 
-        status.exp += enemyStatus.exp;
+        GameData.exp += enemyStatus.exp;
         this.popUpLabel(enemyStatus.exp, OBJECT_DATA.label.exp.x, OBJECT_DATA.label.exp.y);
         this.updateStatusLabel();
 
@@ -292,7 +329,7 @@ class GameObject {
           battleEnd(true);
         }).play();
         this.battle.sprite.enemy.tweener.to({x: SCREEN_SIZE_X + 256, y: -256}, speedDiv).play();
-        if(status.floor === 30) {
+        if(GameData.floor === 30) {
           this.pushLog(`<color:${COLOR.red}>[${enemyStatus.name}]</color>「ば、バカな！私が負け…る…とは…」`);
         } else {
           this.pushLog(`<color:${COLOR.red}>[${enemyStatus.name}]</color>「${getLoseText()}」`);
@@ -305,8 +342,8 @@ class GameObject {
       }).play();
     }
     const centerX = SCREEN_SIZE_X / 2;
-    const speed = SPEED_DATA[status.speed].speed;
-    const speedDiv = SPEED_DATA[status.speed].speed / 5;
+    const speed = SPEED_DATA[GameData.speed].speed;
+    const speedDiv = SPEED_DATA[GameData.speed].speed / 5;
 
     this.battle.sprite.player.tweener.to({x: centerX}, speed).play();
     this.battle.sprite.enemy.tweener.to({x: centerX}, speed).call(()=>{
@@ -328,29 +365,29 @@ class GameObject {
   }
   levelUp (key) {
     const data = LEVEL_UP_DATA[key];
-    if(status.exp < status[key]) {
+    if(GameData.exp < GameData[key]) {
       this.updateStatusLabel();
       return;
     }
-    status.level++;
+    GameData.level++;
     sePlay('piyo');
 
-    const filterdData = SPEED_DATA.filter(v=>v.needLevel===status.level);
+    const filterdData = SPEED_DATA.filter(v=>v.needLevel===GameData.level);
     if(filterdData.length > 0) {
       this.pushLog(`<color:${COLOR.green}>[System]</color>戦闘速度[${filterdData[0].text}]が開放されました。`); 
     }
-    this.popUpLabel(-status[key], OBJECT_DATA.label.exp.x, OBJECT_DATA.label.exp.y);
+    this.popUpLabel(-GameData[key], OBJECT_DATA.label.exp.x, OBJECT_DATA.label.exp.y);
     this.popUpLabel(data.value, OBJECT_DATA.label[key].x, OBJECT_DATA.label[key].y);
 
     if(data.key === 'hp') {
-      status.maxHp += data.value;
-      status.hp = status.maxHp;
+      GameData.maxHp += data.value;
+      GameData.hp = GameData.maxHp;
     } else {
-      status[data.key] += data.value;
+      GameData[data.key] += data.value;
     }
 
-    status.exp -= status[key];
-    status[key] += Math.ceil(status[key] * 0.25);
+    GameData.exp -= GameData[key];
+    GameData[key] += Math.ceil(GameData[key] * 0.25);
     this.updateStatusLabel();
   }
   pushLog(text) {
@@ -364,20 +401,29 @@ class GameObject {
   }
   updateStatusLabel() {
     ['hp', 'atk', 'def', 'exp', 'floor', 'level', 'kill', 'death'].forEach(key => {
-      this.status.label[key].text = `${key.toUpperCase()}:${status[key]}`;
+      this.status.label[key].text = `${key.toUpperCase()}:${GameData[key]}`;
     });
     
     ['needHpExp', 'needAtkExp', 'needDefExp'].forEach(key => {
-      this.status.label[key].text = `${status[key]}EXPで強化`;
+      this.status.label[key].text = `${GameData[key]}EXPで強化`;
       
-      const isActive = !status.isBattle && status.exp >= status[key];
+      const isActive = !GameData.isBattle && GameData.exp >= GameData[key];
       this.status.shape[key].setInteractive(isActive);
       this.status.shape[key].alpha = isActive ? 1 : 0.5;
     });
 
-    this.encounter.label.text = status.isBattle ? '出撃中' : '出撃';
-    this.encounter.shape.setInteractive(!status.isBattle);
-    this.encounter.shape.alpha = !status.isBattle ? 1 : 0.5;
+    this.save.label.setInteractive(!GameData.isBattle);
+    this.save.shape.alpha = !GameData.isBattle ? 1 : 0.5;
+
+    // TODO: 常にOFFにしときます
+    // this.load.label.setInteractive(!GameData.isBattle);
+    // this.load.shape.alpha = !GameData.isBattle ? 1 : 0.5;
+    this.load.label.setInteractive(false);
+    this.load.shape.alpha = 0.5;
+
+    this.encounter.label.text = GameData.isBattle ? '出撃中' : '出撃';
+    this.encounter.shape.setInteractive(!GameData.isBattle);
+    this.encounter.shape.alpha = !GameData.isBattle ? 1 : 0.5;
   }
   popUpLabel(value, x, y, size=30) {
     // 負の整数の場合は赤、それ以外は白
