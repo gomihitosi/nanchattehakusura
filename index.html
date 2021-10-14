@@ -5,6 +5,7 @@
   <meta charset='utf-8' />
   <title>なんちゃってはくすら</title>
   <link rel="shortcut icon" href="favicon.ico">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0">
   <style>
     html,
     body {
@@ -38,9 +39,17 @@
       z-index: 9999;
       width: 80%;
       height: 40%;
+      font-size: 1.5rem;
+    }
+    #button-area {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     button {
-      font-size:3rem;
+      width: 70%;
+      font-size:2rem;
       padding: 0.2rem 0.4rem;
       margin: 0.4rem 0.8rem;
     }
@@ -58,20 +67,77 @@
     <div id="data-area">
       <textarea id="data-text-area"></textarea>
       <div id="button-area">
+        <button id="copy">コピー</button>
+        <button id="paste">ペースト</button>
         <button id="clear">クリア</button>
+        <button id="load">ロード</button>
         <button id="close">閉じる</button>
       </div>
     </div>
   </div>
   <script>
-    const getPopup = () => document.getElementById('data-popup');
-    const getTextArea = () => document.getElementById('data-text-area');
+    const popup = document.getElementById('data-popup');
+    const textArea = document.getElementById('data-text-area');
+    
+    const openSave = ()=> {
+      const enc = new TextEncoder();
+      const encGameData = enc.encode(JSON.stringify(GameData));
+      const base64Data = btoa(String.fromCharCode(...new Uint8Array(encGameData)));
+
+      textArea.value = `VERSION:${VERSION}:${base64Data}`;
+      popup.style.display = '';
+      globalGameObject.pushLog(`<color:${COLOR.green}>[System]</color>現在のステータスを出力したよ。`);
+    }
+
+    const load = document.getElementById('load');
+    load.addEventListener('click', (e)=>{
+      const splitText = textArea.value.split(':');
+      // TODO: エラーハンドリング
+      const binary = atob(splitText[2]);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+
+      const dec = new TextDecoder();
+      const decGameData = dec.decode(bytes);
+      const loadGameData = JSON.parse(decGameData);
+      Object.keys(GameData).forEach(key => {
+        if(key in loadGameData) {
+          GameData[key] = loadGameData[key];
+        }
+      });
+      // TODO: スピードはラベル管理してないから…
+      GameData.speed = 1;
+      globalGameObject.updateStatusLabel();
+      globalGameObject.pushLog(`<color:${COLOR.green}>[System]</color>入力されたデータからステータスを復元したよ。`);
+      closeEvent();
+    });
+
+    const clipBoard = navigator.clipboard;
+    const copy = document.getElementById('copy');
+    const paste = document.getElementById('paste');
+    if(!clipBoard) {
+      copy.style.display = 'none';
+      paste.style.display = 'none';
+    } else {
+      copy.addEventListener('click', (e)=>{
+        clipBoard.writeText(textArea.value);
+      });
+      paste.addEventListener('click', (e)=>{
+        clipBoard.readText().then((text) => {
+          textArea.value = text;
+        });
+      });
+    }
 
     const clear = document.getElementById('clear');
-    clear.addEventListener('click', (e)=>{ getTextArea().value = '' });
+    clear.addEventListener('click', (e)=>{ textArea.value = '' });
 
     const close = document.getElementById('close');
-    close.addEventListener('click', (e)=>{ getPopup().style.display = 'none' });
+    const closeEvent = (e)=>popup.style.display = 'none';
+    close.addEventListener('click', closeEvent);
   </script>
   <script>
     window.addEventListener('touchmove.noScroll', function (e) {

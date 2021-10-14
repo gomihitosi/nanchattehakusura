@@ -11,6 +11,7 @@ const GameData = {
   level: 1, maxHp:10, hp:10, atk:1, def:1, exp:0,
   needHpExp:1, needAtkExp:1, needDefExp:1,
 };
+let globalGameObject;
 
 phina.define('MainScene', {
   superClass: 'DisplayScene',
@@ -45,6 +46,9 @@ phina.define('MainScene', {
 
     this.gameObject = new GameObject(this.mainGroup);
     this.gameObject.initialized();
+    
+    // TODO: うーん
+    globalGameObject = this.gameObject;
   },
   update: function (app) {
   },
@@ -60,7 +64,6 @@ class GameObject {
     this.speed = { shape: {}, label:{} };
     this.tweet = { sprite: {}, label:{} };
     this.save = { sprite: {}, label:{} };
-    this.load = { sprite: {}, label:{} };
 
     this.message = { shape: {}, label:{} };
   }
@@ -153,22 +156,13 @@ class GameObject {
       .setScale(4);
 
     this.save.shape = RectangleShape({
-        width: 60, height: 48, cornerRadius: 5, fill: COLOR.white, strokeWidth: 0,
+        width: 120, height: 48, cornerRadius: 5, fill: COLOR.white, strokeWidth: 0,
       }).addChildTo(this.group)
-      .setPosition(420, OBJECT_Y.need);
-    this.save.label =  Label({ text: 'SAVE', fill: COLOR.black, fontSize: 15 })
+      .setPosition(450, OBJECT_Y.need);
+    this.save.label =  Label({ text: 'セーブ/ロード', fill: COLOR.black, fontSize: 15 })
       .addChildTo(this.group)
-      .setPosition(420, OBJECT_Y.need)
-      .on("pointstart", () => { this.openSave() });
-
-    this.load.shape = RectangleShape({
-        width: 60, height: 48, cornerRadius: 5, fill: COLOR.white, strokeWidth: 0,
-      }).addChildTo(this.group)
-      .setPosition(490, OBJECT_Y.need);
-    this.load.label = Label({ text: 'LOAD', fill: COLOR.black, fontSize: 15 })
-      .addChildTo(this.group)
-      .setPosition(490, OBJECT_Y.need)
-      .on("pointstart", () => { this.openSave() });
+      .setPosition(450, OBJECT_Y.need)
+      .on("pointstart", () => { openSave() });
 
     this.updateStatusLabel();
 
@@ -195,27 +189,6 @@ class GameObject {
       .setPosition(0, 0);
 
     this.messageOpen('魔王クソゲム「世界を…滅ぼす！」\nあなた「やだ～～」\n\n30Fに潜む魔王クソゲムを討つべく\n己を鍛えながらダンジョンに挑みましょう。\n\n[クリック か タッチ で閉じる]');
-  }
-  openSave() {
-    const enc = new TextEncoder();
-    const encGameData = enc.encode(JSON.stringify(GameData));
-    const base64Data = btoa(String.fromCharCode(...new Uint8Array(encGameData)));
-
-    getTextArea().value = `VERSION:${VERSION}:${base64Data}`;
-    const p = getPopup();
-    p.style.display = '';
-  }
-  openLoad() {
-    const binary = atob(getTextArea().value);
-    const len = binary.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++)        {
-      bytes[i] = binary.charCodeAt(i);
-    }
-
-    const dec = new TextDecoder();
-    const decGameData = dec.decode(bytes);
-    // TODO: 復元処理
   }
   messageOpen(text) {
     Object.keys(this.status.shape).forEach(key=>this.status.shape[key].setInteractive(false));
@@ -424,12 +397,6 @@ class GameObject {
 
     this.save.label.setInteractive(!GameData.isBattle);
     this.save.shape.alpha = !GameData.isBattle ? 1 : 0.5;
-
-    // TODO: 常にOFFにしときます
-    // this.load.label.setInteractive(!GameData.isBattle);
-    // this.load.shape.alpha = !GameData.isBattle ? 1 : 0.5;
-    this.load.label.setInteractive(false);
-    this.load.shape.alpha = 0.5;
 
     this.encounter.label.text = GameData.isBattle ? '出撃中' : '出撃';
     this.encounter.shape.setInteractive(!GameData.isBattle);
